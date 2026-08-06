@@ -52,6 +52,7 @@ def insert_log(
     data_json: dict,
     errors: str = ""
 ):
+    logger.info(f"INSER LOG: max_updated = {data_json.get('max_updated')}, status = {data_json.get('status')}")
     """Вставляет запись о выполнении синхронизации в таблицу логов."""
     insert_sql = """
         INSERT INTO qdrant_sync_log (runner_start, runner_end, data_json, errors)
@@ -76,15 +77,16 @@ def get_last_successful_sync_time() -> Optional[datetime]:
     Если записей нет или max_updated отсутствует – возвращает None.
     """
     query = """
-        SELECT data_json->>'max_updated'
-        FROM qdrant_sync_log
-        WHERE data_json->>'status' = 'success'
-          AND data_json->>'max_updated' IS NOT NULL
-        ORDER BY runner_end DESC
-        LIMIT 1
-    """
+            SELECT data_json ->>'max_updated'
+            FROM qdrant_sync_log
+            WHERE data_json->>'status' = 'success'
+              AND data_json->>'max_updated' IS NOT NULL
+            ORDER BY runner_end DESC
+                LIMIT 1 \
+            """
     with engine.connect() as conn:
         result = conn.execute(text(query)).fetchone()
         if result and result[0]:
+            # Возвращаем как есть, без обрезания
             return datetime.fromisoformat(result[0])
     return None

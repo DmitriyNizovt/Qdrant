@@ -30,10 +30,9 @@ def _log_query_time(query_name: str, start: float) -> None:
     logger.info(f"Query '{query_name}' executed in {elapsed:.4f} sec")
 
 def get_updated_users(last_sync: datetime) -> List[tuple]:
-    """
-    Возвращает список кортежей (user_id, updated_at) для пользователей,
-    у которых есть записи с updated_at > last_sync.
-    """
+    # Обрезаем микросекунды для сравнения по секундам
+    last_sync_rounded = last_sync.replace(microsecond=0)
+    logger.info(f"get_updated_users: using last_sync rounded to seconds: {last_sync_rounded}")
     ch = get_ch_client()
     query = """
         SELECT user_id, max(updated_at) AS max_updated
@@ -41,7 +40,7 @@ def get_updated_users(last_sync: datetime) -> List[tuple]:
         WHERE updated_at > %(last_sync)s
         GROUP BY user_id
     """
-    rows = ch.execute(query, {'last_sync': last_sync})
+    rows = ch.execute(query, {'last_sync': last_sync_rounded})
     ch.disconnect_connection()
     return [(row[0], row[1]) for row in rows]
 

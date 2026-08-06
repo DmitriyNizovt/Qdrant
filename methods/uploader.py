@@ -2,7 +2,7 @@ import time
 import uuid
 from settings.logger import setup_logger
 from typing import List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import numpy as np
 from qdrant_client import QdrantClient, models
@@ -290,6 +290,11 @@ class QdrantUploader:
             load_time = time.perf_counter() - start_load
 
             max_updated = get_max_updated_at()
+            if max_updated:
+                if max_updated.microsecond > 0 or max_updated.second > 0:
+                    max_updated = max_updated.replace(microsecond=0) + timedelta(seconds=1)
+                else:
+                    max_updated = max_updated.replace(microsecond=0)
 
 
             end_time = datetime.now(timezone.utc)
@@ -381,6 +386,12 @@ class QdrantUploader:
             total_load_time = 0         # суммарное время на загрузку
             # Максимальный updated_at среди всех обработанных пользователей (нужен для обновления last_sync_time)
             max_updated_from_all_users = max(updated_at for _, updated_at in updated_users)
+            # Округляем вверх до целой секунды, чтобы избежать повторной обработки
+            from datetime import timedelta
+            if max_updated_from_all_users.microsecond > 0 or max_updated_from_all_users.second > 0:
+                max_updated_from_all_users = max_updated_from_all_users.replace(microsecond=0) + timedelta(seconds=1)
+            else:
+                max_updated_from_all_users = max_updated_from_all_users.replace(microsecond=0)
 
             # Разбиваем пользователей на батчи (чтобы не перегружать Qdrant и контролировать память)
             for i in range(0, len(user_ids), self.batch_users):
@@ -457,6 +468,7 @@ class QdrantUploader:
                 "max_updated": max_updated_from_all_users.isoformat() if max_updated_from_all_users else None,
                 "status": "success"
             })
+            logger.info(f"DEBUG: about to insert log with max_updated = {max_updated_from_all_users}")
             insert_log(start_time, end_time, data_json)
 
             logger.info(
