@@ -3,7 +3,6 @@ version: '3.9'
 services:
   postgres_logs:
     image: postgres:15
-    container_name: qdrant_logs_db
     ports:
       - "${PG_LOG_PORT_HOST}:5432"
     environment:
@@ -24,7 +23,6 @@ services:
   # --- Qdrant ---
   qdrant:
     image: qdrant/qdrant:latest
-    container_name: qdrant_server
     ports:
       - "${QDRANT_HTTP_PORT}:6333"          # внешний порт для HTTP API
       - "${QDRANT_GRPC_PORT}:6334"          # внешний порт для gRPC
@@ -39,7 +37,6 @@ services:
   # приложение
   app:
     build: .
-    container_name: qdrant_app
     command: sh -c "python app.py"
     restart: always
     volumes:

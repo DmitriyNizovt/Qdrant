@@ -7,7 +7,7 @@ import json
 from settings.logger import setup_logger
 from datetime import datetime
 from typing import Optional
-
+import psycopg2
 from sqlalchemy import create_engine, text
 from settings import constance
 

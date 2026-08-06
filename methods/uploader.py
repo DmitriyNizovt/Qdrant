@@ -6,10 +6,10 @@ from datetime import datetime, timezone
 
 import numpy as np
 from qdrant_client import QdrantClient, models
-from postgres_logger import insert_log
+from methods.postgres_logger import insert_log
 
 from settings import constance
-from clickhouse import (
+from methods.clickhouse import (
     ensure_state_table,
     get_last_sync_time,
     update_last_sync_time,
@@ -56,7 +56,7 @@ class QdrantUploader:
         self.batch_users = batch_users
 
         # Инициализация клиента Qdrant (по умолчанию REST, можно переключить на gRPC)
-        self.qdrant_client = QdrantClient(url=constance.QDRANT_URL, timeout=120)
+        self.qdrant_client = QdrantClient(url=f'http://{constance.QDRANT_HOST}:{constance.QDRANT_PORT}', timeout=120)
 
         # Проверяем/создаём таблицу состояния синхронизации
         ensure_state_table()

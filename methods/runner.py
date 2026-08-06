@@ -2,7 +2,7 @@
 Запускает синхронизацию Qdrant.
 """
 
-from uploader import QdrantUploader
+from methods.uploader import QdrantUploader
 from settings.logger import setup_logger
 
 # Инициализация логгера (файл + консоль)
