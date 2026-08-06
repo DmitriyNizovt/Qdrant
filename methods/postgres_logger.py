@@ -15,7 +15,7 @@ from settings import constance
 logger = setup_logger(name="qdrant_scheduler")
 
 DATABASE_URL = (
-    f"postgresql+pg8000://"
+    f"postgresql+psycopg2://"
     f"{constance.PG_LOG_USER}:{constance.PG_LOG_PASS}@"
     f"{constance.PG_LOG_HOST}:{constance.PG_LOG_PORT}/"
     f"{constance.PG_LOG_DB}"

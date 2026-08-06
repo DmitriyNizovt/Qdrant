@@ -5,16 +5,16 @@ services:
     image: postgres:15
     container_name: qdrant_logs_db
     ports:
-      - "5433:5432"
+      - "${PG_LOG_PORT_HOST}:5432"
     environment:
-      POSTGRES_DB: migration_logs
-      POSTGRES_USER: log_user
-      POSTGRES_PASSWORD: log_pass_123
+      POSTGRES_DB: ${PG_LOG_DB}
+      POSTGRES_USER: ${PG_LOG_USER}
+      POSTGRES_PASSWORD: ${PG_LOG_PASS}
     volumes:
       - ./pg_logs_data:/var/lib/postgresql/data
     command: postgres -c password_encryption=md5
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U log_user -d migration_logs"]
+      test: ["CMD-SHELL", "pg_isready -U ${PG_LOG_USER} -d ${PG_LOG_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,8 +26,8 @@ services:
     image: qdrant/qdrant:latest
     container_name: qdrant_server
     ports:
-      - "6333:6333"                # основной порт для API
-      - "6334:6334"                # порт для gRPC
+      - "${QDRANT_HTTP_PORT}:6333"          # внешний порт для HTTP API
+      - "${QDRANT_GRPC_PORT}:6334"          # внешний порт для gRPC
     volumes:
       - ./qdrant_storage:/qdrant/storage   # локальная папка для данных БД
     environment:
@@ -54,10 +54,6 @@ services:
       - .env
     networks:
       - bi_network
-    # дополнительно можно добавить переменные, чтобы app знал, где qdrant:
-    environment:
-      - QDRANT_HOST=qdrant
-      - QDRANT_PORT=6333
 
 networks:
   bi_network:

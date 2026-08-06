@@ -10,23 +10,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ---------- ClickHouse (источник данных: auction_vectors) ----------
-CH_HOST = os.getenv('CH_HOST', '91.202.205.16')
-CH_PORT = int(os.getenv('CH_PORT', 5542))
-CH_DB = os.getenv('CH_DB', 'look_a_like')
-CH_USER = os.getenv('CH_USER', 'look_user')
-CH_PASS = os.getenv('CH_PASS', 'iusdboinc239sckqdaksHFeoi3rs')
+CH_HOST = os.getenv('CH_HOST', None)
+CH_PORT = int(os.getenv('CH_PORT', 0))
+CH_DB = os.getenv('CH_DB', None)
+CH_USER = os.getenv('CH_USER', None)
+CH_PASS = os.getenv('CH_PASS', None)
 
 # ---------- Qdrant ----------
-QDRANT_URL = os.getenv('QDRANT_URL', 'http://localhost:6333')
-COLLECTION_NAME = os.getenv('QDRANT_COLLECTION_NAME', 'user_clusters')
-VECTOR_SIZE = int(os.getenv('QDRANT_VECTOR_SIZE', 384))
+QDRANT_URL = os.getenv('QDRANT_URL', None)
+COLLECTION_NAME = os.getenv('QDRANT_COLLECTION_NAME', None)
+VECTOR_SIZE = int(os.getenv('QDRANT_VECTOR_SIZE', 0))
 
 # ---------- PostgreSQL ----------
-PG_LOG_HOST = 'localhost'
-PG_LOG_PORT = 5433
-PG_LOG_DB = 'migration_logs'
-PG_LOG_USER = 'log_user'
-PG_LOG_PASS = 'log_pass_123'
+PG_LOG_HOST = None
+PG_LOG_PORT = 0
+PG_LOG_DB = None
+PG_LOG_USER = None
+PG_LOG_PASS = None
 
 # ---------- Настройки синхронизации ----------
 SYNC_INTERVAL_MINUTES = int(os.getenv('QDRANT_SYNC_INTERVAL_MINUTES', 60))
