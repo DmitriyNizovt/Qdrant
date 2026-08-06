@@ -6,19 +6,19 @@ from datetime import datetime, timezone
 
 import numpy as np
 from qdrant_client import QdrantClient, models
-from methods.postgres_logger import insert_log
+
 
 from settings import constance
 from methods.clickhouse import (
-    ensure_state_table,
-    get_last_sync_time,
-    update_last_sync_time,
     get_updated_users,
     get_users_with_clusters,
     fetch_clusters_for_users,
     fetch_all_clusters,
     get_max_updated_at,
 )
+from methods.postgres_logger import insert_log, get_last_successful_sync_time
+
+
 # Инициализация логгера (файл + консоль)
 logger = setup_logger(name="qdrant_scheduler")
 
@@ -57,9 +57,6 @@ class QdrantUploader:
 
         # Инициализация клиента Qdrant (по умолчанию REST, можно переключить на gRPC)
         self.qdrant_client = QdrantClient(url=f'http://{constance.QDRANT_HOST}:{constance.QDRANT_PORT}', timeout=120)
-
-        # Проверяем/создаём таблицу состояния синхронизации
-        ensure_state_table()
 
     def ensure_collection(self, force_recreate: bool = False) -> None:
         """
@@ -293,8 +290,7 @@ class QdrantUploader:
             load_time = time.perf_counter() - start_load
 
             max_updated = get_max_updated_at()
-            if max_updated:
-                update_last_sync_time(self.collection_name, max_updated)
+
 
             end_time = datetime.now(timezone.utc)
             data_json.update({
@@ -334,7 +330,7 @@ class QdrantUploader:
         start_time = datetime.now(timezone.utc)
 
         # ----- 1. Получаем время последней успешной синхронизации -----
-        last_sync = get_last_sync_time(self.collection_name)
+        last_sync = get_last_successful_sync_time()
 
         # Подготавливаем словарь для логирования в БД (заполнится по ходу работы)
         data_json = {
@@ -355,7 +351,7 @@ class QdrantUploader:
         try:
             # Если last_sync нет → значит это первый запуск → переключаемся на историческую заливку
             if last_sync is None:
-                logger.info("Нет сохранённого last_sync_time, выполняем историческую заливку...")
+                logger.info("Нет состояния синхронизации, выполняем историческую заливку...")
                 return self.historical_upload()
 
             logger.info(f"Инкрементальная заливка с last_sync_time = {last_sync}")
@@ -446,12 +442,7 @@ class QdrantUploader:
             # ----- 7. Обновляем last_sync_time на основе максимального updated_at среди всех обработанных -----
             # Это гарантирует, что даже пользователи без кластеров не будут обрабатываться снова.
             start_update = time.perf_counter()
-            if max_updated_from_all_users > last_sync:
-                update_last_sync_time(self.collection_name, max_updated_from_all_users)
-            else:
-                # Теоретически такого не должно быть, но если произойдёт – оставляем без изменений
-                logger.warning(
-                    f"max_updated_from_all_users ({max_updated_from_all_users}) не превышает last_sync ({last_sync})")
+
             update_time = time.perf_counter() - start_update
 
             # ----- 8. Фиксируем завершение и логируем результат в БД -----

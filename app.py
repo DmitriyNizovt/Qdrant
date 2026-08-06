@@ -8,7 +8,7 @@ from settings import constance
 from settings.logger import setup_logger
 from methods.runner import run_qdrant_sync
 from methods.postgres_logger import init_log_table, get_pg_connection
-from methods.clickhouse import ensure_state_table, get_ch_client
+from methods.clickhouse import get_ch_client
 
 
 # Инициализация логгера (как в миграции)
@@ -37,12 +37,8 @@ try:
     ch.disconnect_connection()
     logger.info("Подключение к ClickHouse (источник) успешно")
 
-    # Создаём таблицу состояния синхронизации, если её нет
-    ensure_state_table()
-    logger.info("Таблица состояния qdrant_sync_state проверена/создана")
-
 except Exception as e:
-    logger.error(f"Ошибка при инициализации ClickHouse: {e}")
+    logger.error(f"Ошибка при подключении к ClickHouse: {e}")
     sys.exit(1)
 
 # ----- Остальной код шедулера -----

@@ -68,3 +68,23 @@ def insert_log(
             }
         )
         conn.commit()
+
+def get_last_successful_sync_time() -> Optional[datetime]:
+    """
+    Возвращает max_updated из последней успешной записи в таблице логов.
+    Используется для восстановления состояния синхронизации вместо таблицы ClickHouse.
+    Если записей нет или max_updated отсутствует – возвращает None.
+    """
+    query = """
+        SELECT data_json->>'max_updated'
+        FROM qdrant_sync_log
+        WHERE data_json->>'status' = 'success'
+          AND data_json->>'max_updated' IS NOT NULL
+        ORDER BY runner_end DESC
+        LIMIT 1
+    """
+    with engine.connect() as conn:
+        result = conn.execute(text(query)).fetchone()
+        if result and result[0]:
+            return datetime.fromisoformat(result[0])
+    return None

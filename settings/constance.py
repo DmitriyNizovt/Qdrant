@@ -31,11 +31,11 @@ PG_LOG_PASS = os.getenv('PG_LOG_PASS', None)
 
 
 # ---------- Настройки синхронизации ----------
-SYNC_INTERVAL_MINUTES = int(os.getenv('QDRANT_SYNC_INTERVAL_MINUTES', 60))
+SYNC_INTERVAL_MINUTES = int(os.getenv('MINUTES_RUNNER', 60))
 BATCH_SIZE = int(os.getenv('QDRANT_BATCH_SIZE', 2000))
 CH_BLOCK_SIZE = int(os.getenv('QDRANT_CH_BLOCK_SIZE', 100000))
 RETRIES = int(os.getenv('QDRANT_RETRIES', 3))
-BATCH_USERS = int(os.getenv('QDRANT_BATCH_USERS', 100))
+BATCH_USERS = int(os.getenv('BATCH_SIZE_USERS', 10000))
 
 # ---------- Таблица состояния ----------
 SYNC_STATE_TABLE = os.getenv('QDRANT_SYNC_STATE_TABLE', 'qdrant_sync_state')
