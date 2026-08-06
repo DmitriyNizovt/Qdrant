@@ -1,0 +1,8 @@
+clickhouse-driver==0.2.9
+qdrant-client>=1.9.0
+apscheduler>=3.10.0
+numpy>=1.24.0
+pg8000>=1.30.0
+sqlalchemy>=2.0.0
+python-dotenv>=1.0.0
+pandas>=2.0.0

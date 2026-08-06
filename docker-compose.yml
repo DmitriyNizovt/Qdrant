@@ -1,0 +1,64 @@
+version: '3.9'
+
+services:
+  postgres_logs:
+    image: postgres:15
+    container_name: qdrant_logs_db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: migration_logs
+      POSTGRES_USER: log_user
+      POSTGRES_PASSWORD: log_pass_123
+    volumes:
+      - ./pg_logs_data:/var/lib/postgresql/data
+    command: postgres -c password_encryption=md5
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U log_user -d migration_logs"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bi_network
+
+  # --- Qdrant ---
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_server
+    ports:
+      - "6333:6333"                # основной порт для API
+      - "6334:6334"                # порт для gRPC
+    volumes:
+      - ./qdrant_storage:/qdrant/storage   # локальная папка для данных БД
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    restart: unless-stopped
+    networks:
+      - bi_network
+
+  # приложение
+  app:
+    build: .
+    container_name: qdrant_app
+    command: sh -c "python app.py"
+    restart: always
+    volumes:
+      - .:/app
+    working_dir: /app
+    depends_on:
+      postgres_logs:
+        condition: service_healthy
+      qdrant:
+        condition: service_started  # Qdrant пока не имеет встроенного healthcheck, можно проверить через curl
+    env_file:
+      - .env
+    networks:
+      - bi_network
+    # дополнительно можно добавить переменные, чтобы app знал, где qdrant:
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+
+networks:
+  bi_network:
+    driver: bridge
