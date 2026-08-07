@@ -110,6 +110,15 @@ def get_max_updated_at() -> Optional[datetime]:
         return row[0][0]
     return None
 
+def get_min_updated_at() -> Optional[datetime]:
+    """Возвращает минимальное значение updated_at из таблицы auction_vectors."""
+    ch = get_ch_client()
+    row = ch.execute("SELECT min(updated_at) FROM auction_vectors")
+    ch.disconnect_connection()
+    if row and row[0][0] is not None:
+        return row[0][0]
+    return None
+
 def get_users_with_clusters(user_ids: list[str]) -> set[str]:
     """
     Возвращает пользователей, у которых сейчас есть кластеры в auction_vectors.

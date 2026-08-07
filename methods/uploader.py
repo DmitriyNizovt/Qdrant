@@ -15,6 +15,7 @@ from methods.clickhouse import (
     fetch_clusters_for_users,
     fetch_all_clusters,
     get_max_updated_at,
+    get_min_updated_at
 )
 from methods.postgres_logger import insert_log, get_last_successful_sync_time
 
@@ -275,10 +276,12 @@ class QdrantUploader:
         logger.info("Начинаем историческую заливку...")
         data_json = {
             "operation": "historical",
+            "collection_name": self.collection_name,
             "start_time": start_time.isoformat(),
             "total_points": 0,
             "load_time": 0,
             "total_time": 0,
+            "min_updated": None,
             "max_updated": None,
             "status": "started"
         }
@@ -290,6 +293,7 @@ class QdrantUploader:
             load_time = time.perf_counter() - start_load
 
             max_updated = get_max_updated_at()
+            min_updated = get_min_updated_at()
             if max_updated:
                 if max_updated.microsecond > 0 or max_updated.second > 0:
                     max_updated = max_updated.replace(microsecond=0) + timedelta(seconds=1)
@@ -299,9 +303,11 @@ class QdrantUploader:
 
             end_time = datetime.now(timezone.utc)
             data_json.update({
+                "collection_name": self.collection_name,
                 "total_points": total,
                 "load_time": load_time,
                 "total_time": (end_time - start_time).total_seconds(),
+                "min_updated": min_updated.isoformat() if min_updated else None,
                 "max_updated": max_updated.isoformat() if max_updated else None,
                 "status": "success"
             })
@@ -335,11 +341,12 @@ class QdrantUploader:
         start_time = datetime.now(timezone.utc)
 
         # ----- 1. Получаем время последней успешной синхронизации -----
-        last_sync = get_last_successful_sync_time()
+        last_sync = get_last_successful_sync_time(self.collection_name)
 
         # Подготавливаем словарь для логирования в БД (заполнится по ходу работы)
         data_json = {
             "operation": "incremental",
+            "collection_name": self.collection_name,
             "start_time": start_time.isoformat(),
             "last_sync": last_sync.isoformat() if last_sync else None,
             "users_found": 0,
@@ -350,6 +357,8 @@ class QdrantUploader:
             "load_time": 0,
             "update_time": 0,
             "total_time": 0,
+            "min_updated": None,
+            "max_updated": None,
             "status": "started"
         }
 
@@ -385,6 +394,7 @@ class QdrantUploader:
             total_delete_time = 0       # суммарное время на удаление
             total_load_time = 0         # суммарное время на загрузку
             # Максимальный updated_at среди всех обработанных пользователей (нужен для обновления last_sync_time)
+            min_updated_from_all_users = min(updated_at for _, updated_at in updated_users)
             max_updated_from_all_users = max(updated_at for _, updated_at in updated_users)
             # Округляем вверх до целой секунды, чтобы избежать повторной обработки
             from datetime import timedelta
@@ -459,12 +469,14 @@ class QdrantUploader:
             # ----- 8. Фиксируем завершение и логируем результат в БД -----
             end_time = datetime.now(timezone.utc)
             data_json.update({
+                "collection_name": self.collection_name,
                 "users_processed": len(user_ids),
                 "total_points": total_uploaded,
                 "delete_time": total_delete_time,
                 "load_time": total_load_time,
                 "update_time": update_time,
                 "total_time": (end_time - start_time).total_seconds(),
+                "min_updated": min_updated_from_all_users.isoformat() if min_updated_from_all_users else None,
                 "max_updated": max_updated_from_all_users.isoformat() if max_updated_from_all_users else None,
                 "status": "success"
             })
